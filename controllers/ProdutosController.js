@@ -1,8 +1,27 @@
 const router = require('express').Router()
 const Produtos = require('../models/Produtos')
-const multer = require('multer')
-const upload = multer({ dest: 'uploads/'})
-const fs = require('fs')
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+// 🔧 Cria a pasta uploads dinamicamente, caso não exista
+const uploadPath = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
+// ✅ Configuração do multer usando o caminho garantido
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadPath); // usa o caminho criado dinamicamente
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now().toString(36) + '-' + Math.random().toString(36).substring(2);
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({ storage });
 
 const uploadToDrive = require('../utils/googleDrive')
 
