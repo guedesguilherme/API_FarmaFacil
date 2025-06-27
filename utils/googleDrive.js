@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path')
 const { google } = require('googleapis');
+const stream = require('stream');
+const fs = require('fs');
+const path = require('path');
 
-// Caminho temporário para salvar o arquivo JSON (em tempo de execução)
+// Caminho temporário para credenciais (manter como estava)
 const tempCredentialsPath = path.join(__dirname, '../temp-credentials.json');
 
-// Se ainda não existir o arquivo, cria a partir da variável de ambiente
 if (!fs.existsSync(tempCredentialsPath)) {
   const credentialsString = process.env.GOOGLE_CREDENTIALS_JSON;
   if (!credentialsString) {
@@ -14,26 +14,43 @@ if (!fs.existsSync(tempCredentialsPath)) {
   fs.writeFileSync(tempCredentialsPath, credentialsString);
 }
 
-
-// Autenticação com conta de serviço
 const auth = new google.auth.GoogleAuth({
-  keyFile: tempCredentialsPath, // caminho para suas credenciais
+  keyFile: tempCredentialsPath,
   scopes: ['https://www.googleapis.com/auth/drive'],
 });
 
-const uploadToDrive = async (filePath, fileName, mimeType) => {
+// ✅ Função modificada para aceitar buffer ou caminho de arquivo
+const uploadToDrive = async (fileData, fileName, mimeType) => {
   const client = await auth.getClient();
   const drive = google.drive({ version: 'v3', auth: client });
 
   const fileMetadata = {
-    name: fileName, 
-    parents: ['1Z8d6i1lA2vs7ex2FOyvqd4zSl08P2ZQe'], // coloque o ID da pasta onde deseja salvar no Drive
+    name: fileName,
+    parents: ['1Z8d6i1lA2vs7ex2FOyvqd4zSl08P2ZQe'],
   };
 
-  const media = {
-    mimeType,
-    body: fs.createReadStream(filePath),
-  };
+  let media;
+  
+  // Verifica se é um buffer
+  if (Buffer.isBuffer(fileData)) {
+    // Cria stream a partir do buffer
+    const bufferStream = new stream.PassThrough();
+    bufferStream.end(fileData);
+    media = {
+      mimeType,
+      body: bufferStream
+    };
+  } 
+  // Se for string (caminho de arquivo)
+  else if (typeof fileData === 'string') {
+    media = {
+      mimeType,
+      body: fs.createReadStream(fileData)
+    };
+  } 
+  else {
+    throw new Error('Tipo de dado inválido para upload');
+  }
 
   const response = await drive.files.create({
     resource: fileMetadata,
@@ -41,7 +58,6 @@ const uploadToDrive = async (filePath, fileName, mimeType) => {
     fields: 'id',
   });
 
-  // Tornar o arquivo público
   await drive.permissions.create({
     fileId: response.data.id,
     requestBody: {
@@ -50,8 +66,7 @@ const uploadToDrive = async (filePath, fileName, mimeType) => {
     },
   });
 
-  const fileUrl = `https://drive.google.com/uc?id=${response.data.id}`;
-  return fileUrl;
+  return `https://drive.google.com/uc?id=${response.data.id}`;
 };
 
 module.exports = uploadToDrive;
