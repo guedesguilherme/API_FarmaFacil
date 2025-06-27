@@ -4,14 +4,18 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const passport = require('passport')
 const session = require('express-session')
+const fs = require('fs');
+const path = require('path');
 
+// Garante que a pasta uploads exista (funciona no Azure também)
+const uploadDir = path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('Pasta "uploads/" criada com sucesso.');
+}
 
 const app = express()
-
-// app.use(cors({
-//     origin: 'http://localhost:3001', // URL do seu front-end
-//     credentials: true, // Permite enviar cookies com a requisição
-//   }));
 
 app.use(cors())
 app.options("*", cors())
