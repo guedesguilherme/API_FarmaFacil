@@ -50,7 +50,7 @@ const uploadToDrive = async (filePath, fileName, mimeType) => {
     },
   });
 
-  const fileUrl = https://drive.google.com/uc?id=${response.data.id};
+  const fileUrl = `https://drive.google.com/uc?id=${response.data.id}`;
   return fileUrl;
 };
 
