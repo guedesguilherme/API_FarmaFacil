@@ -7,12 +7,11 @@ const session = require('express-session')
 const fs = require('fs');
 const path = require('path');
 
-// Garante que a pasta uploads exista (funciona no Azure também)
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadPath = path.join(__dirname, 'uploads');
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('Pasta "uploads/" criada com sucesso.');
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+  console.log('Pasta "uploads" criada com sucesso');
 }
 
 const app = express()
