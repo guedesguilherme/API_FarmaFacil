@@ -1,19 +1,35 @@
 const router = require('express').Router()
 const Produtos = require('../models/Produtos')
+const router = require('express').Router();
+const Produtos = require('../models/Produtos');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const uploadToDrive = require('../utils/googleDrive');
 
-// 🔧 Cria a pasta uploads dinamicamente, caso não exista
-const uploadPath = path.join(__dirname, '..', 'uploads');
+// 🔥 Detecta se está no Azure App Service
+const isAzure = process.env.WEBSITE_INSTANCE_ID !== undefined;
+
+// Define o caminho para uploads
+const uploadPath = isAzure 
+  ? '/tmp/uploads' 
+  : path.join(__dirname, '..', 'uploads');
+
+// Garante que o diretório de upload existe
 if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
+  try {
+    fs.mkdirSync(uploadPath, { recursive: true });
+    console.log(`Diretório de upload criado: ${uploadPath}`);
+  } catch (err) {
+    console.error(`Erro ao criar diretório de upload: ${uploadPath}`, err);
+    // Em produção, você pode querer tratar isso de forma mais rigorosa
+  }
 }
 
-// ✅ Configuração do multer usando o caminho garantido
+// ✅ Configuração do multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadPath); // usa o caminho criado dinamicamente
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
     const uniqueName = Date.now().toString(36) + '-' + Math.random().toString(36).substring(2);
@@ -22,8 +38,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
-const uploadToDrive = require('../utils/googleDrive')
 
 //Acessando todos os produtos:
 router.get("/", async (req, res) => {
@@ -125,6 +139,8 @@ router.post("/auth/register", upload.single('imagem'), async(req, res) => {
 
     try {
 
+        console.log(`Tentando fazer upload do arquivo: ${req.file.path}`);
+
         const imagem_url = await uploadToDrive(req.file.path, req.file.originalname, req.file.mimetype)
 
         const produto = new Produtos({
@@ -147,13 +163,14 @@ router.post("/auth/register", upload.single('imagem'), async(req, res) => {
         console.log(error)
         res.status(500).json({msg:"Algo deu errado. Tente novamente mais tarde!"})
     } finally {
-        try {
-            if (req.file && req.file.path) {
-              fs.unlinkSync(req.file.path);
+        // Remove o arquivo temporário se existir
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+            try {
+                fs.unlinkSync(req.file.path);
+                console.log(`Arquivo temporário removido: ${req.file.path}`);
+            } catch (err) {
+                console.error('Erro ao remover arquivo temporário:', err);
             }
-          } catch (err) {
-            console.error('Erro ao deletar imagem temporária:', err);
-          }
     }
 })
 
