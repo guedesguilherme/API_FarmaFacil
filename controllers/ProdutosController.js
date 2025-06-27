@@ -160,7 +160,7 @@ router.post("/auth/register", upload.single('imagem'), async(req, res) => {
     } catch (error) {
         console.log(error)
         res.status(500).json({msg:"Algo deu errado. Tente novamente mais tarde!"})
-    } finally {
+    }  } finally {
         // Remove o arquivo temporário se existir
         if (req.file && req.file.path && fs.existsSync(req.file.path)) {
             try {
@@ -169,8 +169,9 @@ router.post("/auth/register", upload.single('imagem'), async(req, res) => {
             } catch (err) {
                 console.error('Erro ao remover arquivo temporário:', err);
             }
+        }
     }
-})
+});
 
 
 //Atualiza dados do Produto
