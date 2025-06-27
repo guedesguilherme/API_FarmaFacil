@@ -7,11 +7,12 @@ const session = require('express-session')
 const fs = require('fs');
 const path = require('path');
 
+// Caminho seguro dentro do App Service
 const uploadPath = path.join(__dirname, 'uploads');
 
+// Verifica se a pasta existe, senão cria
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
-  console.log('Pasta "uploads" criada com sucesso');
 }
 
 const app = express()
